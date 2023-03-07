@@ -5,7 +5,6 @@ from plexapi.myplex import MyPlexAccount
 import json
 import os
 import re
-from pprint import pprint
 
 
 def authenticate(username: str, password: str):
