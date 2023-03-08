@@ -44,7 +44,7 @@ def get_credentials():
 def get_download_url(web_url):
 
     if not web_url:
-        return "Invalid url"
+        return "Provide a url"
 
     pattern_server_id = r"(?<=server\/).*?(?=\/details)"
     pattern_metadata_key = r"(?<=metadata%2F).*?(?=&context)"
