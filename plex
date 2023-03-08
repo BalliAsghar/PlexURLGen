@@ -43,16 +43,25 @@ def get_credentials():
 
 def get_download_url(web_url):
 
+    if not web_url:
+        return "Invalid url"
+
     pattern_server_id = r"(?<=server\/).*?(?=\/details)"
     pattern_metadata_key = r"(?<=metadata%2F).*?(?=&context)"
 
-    server_id = re.search(pattern_server_id, web_url).group(0)
+    server_id = re.search(pattern_server_id, web_url)
     metadata_key = re.search(pattern_metadata_key,
-                             web_url).group(0).replace("\\", "")
+                             web_url)
+
+    if not server_id or not metadata_key:
+        return "Invalid url"
+
+    server_id = server_id.group(0)
+    metadata_key = metadata_key.group(0).replace("\\", "")
 
     # # if metadata_key or server_id is empty, raise exception
     if not metadata_key or not server_id:
-        raise Exception("Invalid url")
+        return "Invalid url"
 
     # # get credentials
     username, password, servers = get_credentials()
