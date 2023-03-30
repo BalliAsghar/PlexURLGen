@@ -138,7 +138,7 @@ def download_media_cli(query):
     url = get_download_url(query)
     click.echo(url)
 
-@click.command(name='list-seasons')
+@click.command(name='tv')
 @click.argument('show_name')
 def list_seasons_cli(show_name):
     username, password, servers = get_credentials()
