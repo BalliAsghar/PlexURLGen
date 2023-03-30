@@ -89,6 +89,24 @@ def get_download_url(web_url):
 
     return url
 
+def list_seasons(account, server_name, show_name):
+    plex = account.resource(server_name).connect()
+    show = plex.library.section('TV Shows').get(show_name)
+    seasons = show.seasons()
+    return seasons
+
+def get_episode_urls(account, server_name, show_name, season_index):
+    plex = account.resource(server_name).connect()
+    show = plex.library.section('TV Shows').get(show_name)
+    season = show.season(season_index)
+    episodes = season.episodes()
+    episode_urls = []
+    for episode in episodes:
+        base_url = episode._server._baseurl
+        media_url = episode.media[0].parts[0].key
+        url = base_url + media_url + "?X-Plex-Token=" + episode._server._token + "&download=1"
+        episode_urls.append(url)
+    return episode_urls
 
 @click.group()
 def plex():
@@ -113,9 +131,27 @@ def download_media_cli(query):
     url = get_download_url(query)
     click.echo(url)
 
+@click.command(name='list-seasons')
+@click.argument('show_name')
+def list_seasons_cli(show_name):
+    username, password, servers = get_credentials()
+    account = authenticate(username, password)[1]
+    server_name = servers[0]['name']  # Assuming the first server in the list
+    seasons = list_seasons(account, server_name, show_name)
+    for season in seasons:
+        click.echo(f'Season {season.index}: {season.title}')
+
+    season_index = click.prompt("Enter the season number you want to select", type=int)
+    episode_urls = get_episode_urls(account, server_name, show_name, season_index)
+    click.echo(f"Episode URLs for {show_name} Season {season_index}:")
+    for url in episode_urls:
+        click.echo(url)
+
 
 plex.add_command(authenticate_cli)
 plex.add_command(download_media_cli)
+plex.add_command(list_seasons_cli)
+
 
 
 if __name__ == '__main__':
