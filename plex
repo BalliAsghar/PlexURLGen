@@ -89,6 +89,13 @@ def get_download_url(web_url):
 
     return url
 
+def save_urls_to_file(show_name, season_index, episode_urls):
+    file_name = f"Season-{season_index}.txt"
+    with open(file_name, 'w') as f:
+        for url in episode_urls:
+            f.write(url + '\n')
+    return file_name
+
 def list_seasons(account, server_name, show_name):
     plex = account.resource(server_name).connect()
     show = plex.library.section('TV Shows').get(show_name)
@@ -139,13 +146,19 @@ def list_seasons_cli(show_name):
     server_name = servers[0]['name']  # Assuming the first server in the list
     seasons = list_seasons(account, server_name, show_name)
     for season in seasons:
-        click.echo(f'Season {season.index}: {season.title}')
+        click.echo(f'{season.title}')
 
     season_index = click.prompt("Enter the season number you want to select", type=int)
     episode_urls = get_episode_urls(account, server_name, show_name, season_index)
     click.echo(f"Episode URLs for {show_name} Season {season_index}:")
     for url in episode_urls:
         click.echo(url)
+
+    save_to_file = click.confirm("Do you want to save the URLs to a text file?", default=False)
+    if save_to_file:
+        file_name = save_urls_to_file(show_name, season_index, episode_urls)
+        click.echo(f"URLs saved to {file_name}")
+
 
 
 plex.add_command(authenticate_cli)
