@@ -234,12 +234,6 @@ def list_seasons_cli(show_name):
     for url in episode_urls:
         click.echo(url)
 
-    save_to_file = click.confirm(
-        "Do you want to save the URLs to a text file?", default=False)
-    if save_to_file:
-        file_name = save_urls_to_file(show_name, season_index, episode_urls)
-        click.echo(f"URLs saved to {file_name}")
-
 
 @click.command(name='playlist')
 def playlist_cli():
@@ -265,8 +259,16 @@ def playlist_cli():
 
     item_urls = get_playlist_urls(account, server_name, playlist_title)
     click.echo(f"URLs for items in the playlist '{playlist_title}':")
+
+    total_size = 0
+    for item in playlists[playlist_index].items():
+        size = item.media[0].parts[0].size
+        total_size += size
+
     for url in item_urls:
         click.echo(url)
+
+    click.echo(f"Total size: {total_size / 1024 / 1024 / 1024:.2f} GB")
 
 
 plex.add_command(authenticate_cli)
