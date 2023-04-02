@@ -7,6 +7,7 @@ import os
 import re
 
 
+#                 AUTHENTICATION
 def authenticate(username: str, password: str):
     try:
         account = MyPlexAccount(username, password)
@@ -27,18 +28,19 @@ def save_credentials(username: str, password: str, account):
         json.dump(credentials, f, indent=4)
 
 
-def list_servers(account):
-    servers = []
-    for server in account.resources():
-        servers.append({'name': server.name, 'id': server.clientIdentifier})
-    return servers
-
-
 def get_credentials():
     path = os.path.join(os.path.expanduser('~'), '.downplex.json')
     with open(path, 'r') as f:
         credentials = json.load(f)
     return credentials['username'], credentials['password'], credentials['servers']
+
+
+#                UTILS
+def list_servers(account):
+    servers = []
+    for server in account.resources():
+        servers.append({'name': server.name, 'id': server.clientIdentifier})
+    return servers
 
 
 def get_download_url(web_url):
@@ -90,7 +92,7 @@ def get_download_url(web_url):
     return url
 
 
-def save_urls_to_file(show_name, season_index, episode_urls):
+def save_urls_to_file(season_index, episode_urls):
     file_name = f"Season-{season_index}.txt"
     with open(file_name, 'w') as f:
         for url in episode_urls:
@@ -104,6 +106,9 @@ def list_sections(account, server_name):
     return sections
 
 
+#              TV SHOWS
+
+
 def list_seasons(account, server_name, section_title, show_name):
     plex = account.resource(server_name).connect()
     show = plex.library.section(section_title).get(show_name)
@@ -113,7 +118,7 @@ def list_seasons(account, server_name, section_title, show_name):
 
 def get_episode_urls(account, server_name, section_title, show_name, season_index):
     plex = account.resource(server_name).connect()
-    show = plex.library.section('TV Shows').get(show_name)
+    show = plex.library.section(section_title).get(show_name)
     season = show.season(season_index)
     episodes = season.episodes()
     episode_urls = []
@@ -141,6 +146,29 @@ def get_episode_filenames(account, server_name, section_title, show_name, season
 @click.group()
 def plex():
     pass
+
+
+#                     PLAYLISTS
+
+def list_playlists(account, server_name):
+    plex = account.resource(server_name).connect()
+    playlists = plex.playlists()
+    return playlists
+
+
+def get_playlist_urls(account, server_name, playlist_title):
+    plex = account.resource(server_name).connect()
+    playlist = plex.playlist(playlist_title)
+    item_urls = []
+
+    for item in playlist.items():
+        base_url = item._server._baseurl
+        media_url = item.media[0].parts[0].key
+        url = base_url + media_url + "?X-Plex-Token=" + \
+            item._server._token + "&download=1"
+        item_urls.append(url)
+
+    return item_urls
 
 
 @click.command(name='auth')
@@ -213,9 +241,38 @@ def list_seasons_cli(show_name):
         click.echo(f"URLs saved to {file_name}")
 
 
+@click.command(name='playlist')
+def playlist_cli():
+    username, password, servers = get_credentials()
+    account = authenticate(username, password)[1]
+
+    click.echo("Available servers:")
+    for index, server in enumerate(servers, start=1):
+        click.echo(f"{index}. {server['name']}")
+
+    server_index = click.prompt(
+        "Enter the index of the server you want to search on", type=int) - 1
+    server_name = servers[server_index]['name']
+
+    click.echo("Available playlists:")
+    playlists = list_playlists(account, server_name)
+    for index, playlist in enumerate(playlists, start=1):
+        click.echo(f"{index}. {playlist.title}")
+
+    playlist_index = click.prompt(
+        "Enter the index of the playlist you want to select", type=int) - 1
+    playlist_title = playlists[playlist_index].title
+
+    item_urls = get_playlist_urls(account, server_name, playlist_title)
+    click.echo(f"URLs for items in the playlist '{playlist_title}':")
+    for url in item_urls:
+        click.echo(url)
+
+
 plex.add_command(authenticate_cli)
 plex.add_command(download_media_cli)
 plex.add_command(list_seasons_cli)
+plex.add_command(playlist_cli)
 
 
 if __name__ == '__main__':
