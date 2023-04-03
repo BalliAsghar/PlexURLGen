@@ -4,10 +4,12 @@ from plexapi.exceptions import BadRequest
 from plexapi.myplex import MyPlexAccount
 import json
 import os
+from functools import lru_cache
 import re
 
+# AUTHENTICATION
 
-#                 AUTHENTICATION
+
 def authenticate(username: str, password: str):
     try:
         account = MyPlexAccount(username, password)
@@ -35,16 +37,17 @@ def get_credentials():
     return credentials['username'], credentials['password'], credentials['servers']
 
 
-#                UTILS
+# UTILS
 def list_servers(account):
-    servers = []
-    for server in account.resources():
-        servers.append({'name': server.name, 'id': server.clientIdentifier})
-    return servers
+    return [{'name': server.name, 'id': server.clientIdentifier} for server in account.resources()]
+
+
+@lru_cache
+def get_account(username, password):
+    return authenticate(username, password)[1]
 
 
 def get_download_url(web_url):
-
     if not web_url:
         return "Provide a url"
 
@@ -70,34 +73,22 @@ def get_download_url(web_url):
     # authenticate
     account = authenticate(username, password)[1]
 
-    # get server
-    server = None
-    for s in servers:
-        if s['id'] == server_id:
-            server = s
-            break
+    # find the server using a generator expression and the `next` function
+    server = next((s for s in servers if s['id'] == server_id), None)
+
     if not server:
         print("Invalid server or invalid url")
         return
 
-    # get media
+    # get media and construct the download URL
     plex = account.resource(server['name']).connect()
     media = plex.fetchItem(int(metadata_key))
-
     base_url = media._server._baseurl
     media_url = media.media[0].parts[0].key
-    url = base_url + media_url + "?X-Plex-Token=" + \
-        media._server._token + "&download=1"
+    token = media._server._token
+    url = f"{base_url}{media_url}?X-Plex-Token={token}&download=1"
 
     return url
-
-
-def save_urls_to_file(season_index, episode_urls):
-    file_name = f"Season-{season_index}.txt"
-    with open(file_name, 'w') as f:
-        for url in episode_urls:
-            f.write(url + '\n')
-    return file_name
 
 
 def list_sections(account, server_name):
@@ -111,8 +102,7 @@ def plex():
     pass
 
 
-#                     PLAYLISTS
-
+# PLAYLISTS
 def list_playlists(account, server_name):
     plex = account.resource(server_name).connect()
     playlists = plex.playlists()
@@ -122,13 +112,12 @@ def list_playlists(account, server_name):
 def get_playlist_urls(account, server_name, playlist_title):
     plex = account.resource(server_name).connect()
     playlist = plex.playlist(playlist_title)
-    item_urls = []
 
+    item_urls = []
     for item in playlist.items():
         base_url = item._server._baseurl
         media_url = item.media[0].parts[0].key
-        url = base_url + media_url + "?X-Plex-Token=" + \
-            item._server._token + "&download=1"
+        url = f"{base_url}{media_url}?X-Plex-Token={item._server._token}&download=1"
         item_urls.append(url)
 
     return item_urls
@@ -156,7 +145,7 @@ def download_media_cli(query):
 @click.command(name='playlist')
 def playlist_cli():
     username, password, servers = get_credentials()
-    account = authenticate(username, password)[1]
+    account = get_account(username, password)
 
     click.echo("Available servers:")
     for index, server in enumerate(servers, start=1):
@@ -178,10 +167,8 @@ def playlist_cli():
     item_urls = get_playlist_urls(account, server_name, playlist_title)
     click.echo(f"URLs for items in the playlist '{playlist_title}':")
 
-    total_size = 0
-    for item in playlists[playlist_index].items():
-        size = item.media[0].parts[0].size
-        total_size += size
+    total_size = sum(
+        item.media[0].parts[0].size for item in playlists[playlist_index].items())
 
     for url in item_urls:
         click.echo(url)
