@@ -106,43 +106,6 @@ def list_sections(account, server_name):
     return sections
 
 
-#              TV SHOWS
-
-
-def list_seasons(account, server_name, section_title, show_name):
-    plex = account.resource(server_name).connect()
-    show = plex.library.section(section_title).get(show_name)
-    seasons = show.seasons()
-    return seasons
-
-
-def get_episode_urls(account, server_name, section_title, show_name, season_index):
-    plex = account.resource(server_name).connect()
-    show = plex.library.section(section_title).get(show_name)
-    season = show.season(season_index)
-    episodes = season.episodes()
-    episode_urls = []
-    for episode in episodes:
-        base_url = episode._server._baseurl
-        media_url = episode.media[0].parts[0].key
-        url = base_url + media_url + "?X-Plex-Token=" + \
-            episode._server._token + "&download=1"
-        episode_urls.append(url)
-    return episode_urls
-
-
-def get_episode_filenames(account, server_name, section_title, show_name, season_index):
-    plex = account.resource(server_name).connect()
-    show = plex.library.section(section_title).get(show_name)
-    season = show.season(season_index)
-    episodes = season.episodes()
-    episode_filenames = []
-    for episode in episodes:
-        filename = episode.media[0].parts[0].file
-        episode_filenames.append(filename)
-    return episode_filenames
-
-
 @click.group()
 def plex():
     pass
@@ -190,51 +153,6 @@ def download_media_cli(query):
     click.echo(url)
 
 
-@click.command(name='tv')
-@click.argument('show_name')
-def list_seasons_cli(show_name):
-    username, password, servers = get_credentials()
-    account = authenticate(username, password)[1]
-
-    # Display available servers and prompt user to choose one
-    click.echo("Available servers:")
-    for index, server in enumerate(servers, start=1):
-        click.echo(f"{index}. {server['name']}")
-
-    server_index = click.prompt(
-        "Enter the index of the server you want to search on", type=int) - 1
-    server_name = servers[server_index]['name']
-
-    # Display available sections and prompt user to choose one
-    click.echo("Available sections:")
-    sections = list_sections(account, server_name)
-    for index, section in enumerate(sections, start=1):
-        click.echo(f"{index}. {section.title}")
-
-    section_index = click.prompt(
-        "Enter the index of the section you want to search in", type=int) - 1
-    section_title = sections[section_index].title
-
-    seasons = list_seasons(account, server_name, section_title, show_name)
-    for season in seasons:
-        click.echo(f'{season.title}')
-
-    season_index = click.prompt(
-        "Enter the season number you want to select", type=int)
-
-    episode_filenames = get_episode_filenames(
-        account, server_name, section_title, show_name, season_index)
-    click.echo(f"Episode filenames for {show_name} Season {season_index}:")
-    for filename in episode_filenames:
-        click.echo(filename)
-
-    episode_urls = get_episode_urls(
-        account, server_name, section_title, show_name, season_index)
-    click.echo(f"Episode URLs for {show_name} Season {season_index}:")
-    for url in episode_urls:
-        click.echo(url)
-
-
 @click.command(name='playlist')
 def playlist_cli():
     username, password, servers = get_credentials()
@@ -273,7 +191,6 @@ def playlist_cli():
 
 plex.add_command(authenticate_cli)
 plex.add_command(download_media_cli)
-plex.add_command(list_seasons_cli)
 plex.add_command(playlist_cli)
 
 
