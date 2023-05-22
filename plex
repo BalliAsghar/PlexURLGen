@@ -96,7 +96,6 @@ def list_sections(account, server_name):
     sections = plex.library.sections()
     return sections
 
-
 @click.group()
 def plex():
     pass
@@ -165,15 +164,19 @@ def playlist_cli():
     playlist_title = playlists[playlist_index].title
 
     item_urls = get_playlist_urls(account, server_name, playlist_title)
-    click.echo(f"URLs for items in the playlist '{playlist_title}':")
 
-    total_size = sum(
-        item.media[0].parts[0].size for item in playlists[playlist_index].items())
+    # display media items in the playlist, Title, Size, Duration
+    for index, item in enumerate(playlists[playlist_index].items(), start=1):
+        click.echo(f"{index}. {item.title}")
 
-    for url in item_urls:
-        click.echo(url)
+    # Ask user to select the items to download
+    selected_items = click.prompt(
+        "Enter the index of the items you want to download, separated by commas", type=str)
+    selected_items = [int(item) - 1 for item in selected_items.split(",")]
 
-    click.echo(f"Total size: {total_size / 1024 / 1024 / 1024:.2f} GB")
+    # Display The url of the selected items
+    for index in selected_items:
+        click.echo(item_urls[index])
 
 
 plex.add_command(authenticate_cli)
