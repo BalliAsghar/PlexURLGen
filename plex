@@ -155,6 +155,12 @@ def playlist_cli():
 
     click.echo("Available playlists:")
     playlists = list_playlists(account, server_name)
+
+    # If no playlists, exit
+    if not playlists:
+        click.echo("No playlists found")
+        return
+
     for index, playlist in enumerate(playlists, start=1):
         click.echo(f"{index}. {playlist.title}")
 
