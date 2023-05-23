@@ -9,6 +9,8 @@ Before using DownPlex, make sure you have the following prerequisites installed 
 - Python 3
 - `pip` package manager
 
+## Installation
+
 ### macos users can also install using brew
 
 ```bash
@@ -16,13 +18,23 @@ brew tap BalliAsghar/apps
 brew install plex --formula
 ```
 
-## Installation
+### Manual Installation
 
-1. Clone or download the DownPlex script to your local machine.
+1. Clone or download the plex script from this repository.
 
 2. Open a terminal or command prompt and navigate to the directory where you saved the script.
 
 3. Install the required dependencies by running the following command:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. Move the script to a directory that is in your system's PATH. For example, on macOS, you can move the script to `/usr/local/bin`:
+
+   ```bash
+   mv plex /usr/local/bin
+   ```
 
 ## Usage
 
