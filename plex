@@ -18,7 +18,7 @@ def authenticate(username: str, password: str):
 
 
 def save_credentials(username: str, password: str, account):
-    path = os.path.join(os.path.expanduser('~'), '.downplex.json')
+    path = os.path.join(os.path.expanduser('~'), '.plexURLGen.json')
     servers = list_servers(account)  # list of servers
     credentials = {
         'username': username,
@@ -30,7 +30,7 @@ def save_credentials(username: str, password: str, account):
 
 
 def get_credentials():
-    path = os.path.join(os.path.expanduser('~'), '.downplex.json')
+    path = os.path.join(os.path.expanduser('~'), '.plexURLGen.json')
     with open(path, 'r') as f:
         credentials = json.load(f)
     return credentials['username'], credentials['password'], credentials['servers']
