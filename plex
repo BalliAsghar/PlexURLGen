@@ -4,7 +4,6 @@ from plexapi.exceptions import BadRequest
 from plexapi.myplex import MyPlexAccount
 import json
 import os
-from functools import lru_cache
 import re
 
 # AUTHENTICATION
@@ -42,7 +41,6 @@ def list_servers(account):
     return [{'name': server.name, 'id': server.clientIdentifier} for server in account.resources()]
 
 
-@lru_cache
 def get_account(username, password):
     return authenticate(username, password)[1]
 
@@ -95,6 +93,7 @@ def list_sections(account, server_name):
     plex = account.resource(server_name).connect()
     sections = plex.library.sections()
     return sections
+
 
 @click.group()
 def plex():
