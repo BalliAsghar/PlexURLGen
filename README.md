@@ -1,6 +1,6 @@
-# DownPlex - CLI for Plex Server
+# PlexURLGen - CLI for Plex Server
 
-DownPlex is a command-line interface (CLI) script that allows you to interact with your Plex server. With DownPlex, you can authenticate, download media, and manage playlists directly from the command line.
+PlexURLGen is a command-line interface (CLI) script that allows you to interact with your Plex server. With DownPlex, you can authenticate, download media, and manage playlists directly from the command line.
 
 ## Prerequisites
 
