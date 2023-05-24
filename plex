@@ -49,9 +49,11 @@ def get_account():
 
 # PLAYLISTS
 def list_playlists(account, server_name):
-    plex = account.resource(server_name).connect()
-    playlists = plex.playlists()
-    return playlists
+    try:
+        plex = account.resource(server_name).connect()
+        return plex.playlists()
+    except Exception as e:
+        raise click.ClickException(str(e))
 
 
 def get_playlist_urls(account, server_name, playlist_title):
