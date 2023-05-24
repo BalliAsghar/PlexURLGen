@@ -173,7 +173,11 @@ def playlist_cli():
 
     server_index = click.prompt(
         "Enter server number", type=int) - 1
-    server_name = servers[server_index]['name']
+
+    try:
+        server_name = servers[server_index]['name']
+    except IndexError:
+        raise click.ClickException('Invalid server number')
 
     click.echo("Choose a playlist:")
     playlists = list_playlists(account, server_name)
@@ -188,7 +192,12 @@ def playlist_cli():
 
     playlist_index = click.prompt(
         "Enter playlist number", type=int) - 1
-    playlist_title = playlists[playlist_index].title
+
+    try:
+        playlist_title = playlists[playlist_index].title
+    except IndexError:
+        click.echo("Invalid playlist number")
+        return
 
     item_urls = get_playlist_urls(account, server_name, playlist_title)
 
@@ -204,7 +213,10 @@ def playlist_cli():
 
     # Display The url of the selected items
     for index in selected_items:
-        click.echo(item_urls[index])
+        try:
+            click.echo(item_urls[index])
+        except IndexError:
+            click.echo(f"Invalid item number: {index + 1}")
 
 
 plex.add_command(authenticate_cli)
