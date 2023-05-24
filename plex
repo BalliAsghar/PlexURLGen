@@ -4,6 +4,7 @@ import click
 from plexapi.exceptions import BadRequest
 from plexapi.myplex import MyPlexAccount
 import keyring
+from keyring.errors import PasswordDeleteError
 
 # Save User Credentials
 
@@ -152,8 +153,11 @@ def download_media_cli(query):
 
 @click.command(name='signout')
 def signout_cli():
-    keyring.delete_password('plexURLGen', 'token')
-    click.echo('Signed out successfully')
+    try:
+        keyring.delete_password('plexURLGen', 'token')
+        click.echo('Signed out successfully')
+    except PasswordDeleteError:
+        click.echo('No credentials found')
 
 
 @click.command(name='playlist')
