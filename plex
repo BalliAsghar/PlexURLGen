@@ -1,103 +1,50 @@
 #!/usr/bin/env python3
+import os
+import re
 import click
 from plexapi.exceptions import BadRequest
 from plexapi.myplex import MyPlexAccount
-import json
-import os
-import re
+import keyring
 
-# AUTHENTICATION
+# Save User Credentials
 
 
-def authenticate(username: str, password: str):
-    try:
-        account = MyPlexAccount(username, password)
-        return True, account
-    except BadRequest as e:
-        return False, str(e)
+def save_credentials(token):
+    keyring.set_password('plexURLGen', 'token', token)
 
-
-def save_credentials(username: str, password: str, account):
-    path = os.path.join(os.path.expanduser('~'), '.plexURLGen.json')
-    servers = list_servers(account)  # list of servers
-    credentials = {
-        'username': username,
-        'password': password,
-        'servers': servers
-    }
-    with open(path, 'w') as f:
-        json.dump(credentials, f, indent=4)
+# Get User Credentials
 
 
 def get_credentials():
-    path = os.path.join(os.path.expanduser('~'), '.plexURLGen.json')
-    with open(path, 'r') as f:
-        credentials = json.load(f)
-    return credentials['username'], credentials['password'], credentials['servers']
+    token = keyring.get_password('plexURLGen', 'token')
+    if token:
+        return token
+    else:
+        return "no_token"
+
+# list of servers
 
 
-# UTILS
 def list_servers(account):
     return [{'name': server.name, 'id': server.clientIdentifier} for server in account.resources()]
 
-
-def get_account(username, password):
-    return authenticate(username, password)[1]
+# Get Plex Account
 
 
-def get_download_url(web_url):
-    if not web_url:
-        return "Provide a url"
-
-    pattern_server_id = r"(?<=server\/).*?(?=\/details)"
-    pattern_metadata_key = r"(?<=metadata%2F).*?(?=&context)"
-
-    server_id = re.search(pattern_server_id, web_url)
-    metadata_key = re.search(pattern_metadata_key,
-                             web_url)
-
-    if not server_id or not metadata_key:
-        return "Invalid url"
-
-    server_id = server_id.group(0)
-    metadata_key = metadata_key.group(0).replace("\\", "")
-
-    # # if metadata_key or server_id is empty, raise exception
-    if not metadata_key or not server_id:
-        return "Invalid url"
-
-    # # get credentials
-    username, password, servers = get_credentials()
-    # authenticate
-    account = authenticate(username, password)[1]
-
-    # find the server using a generator expression and the `next` function
-    server = next((s for s in servers if s['id'] == server_id), None)
-
-    if not server:
-        print("Invalid server or invalid url")
-        return
-
-    # get media and construct the download URL
-    plex = account.resource(server['name']).connect()
-    media = plex.fetchItem(int(metadata_key))
-    base_url = media._server._baseurl
-    media_url = media.media[0].parts[0].key
-    token = media._server._token
-    url = f"{base_url}{media_url}?X-Plex-Token={token}&download=1"
-
-    return url
-
-
-def list_sections(account, server_name):
-    plex = account.resource(server_name).connect()
-    sections = plex.library.sections()
-    return sections
-
-
-@click.group()
-def plex():
-    pass
+def get_account():
+    # Get credentials
+    credentials = get_credentials()
+    # If credentials exist
+    if credentials != "no_token":
+        # Get account
+        try:
+            account = MyPlexAccount(token=credentials)
+            return account
+        except Exception as e:
+            raise BadRequest('Error connecting to Plex account: {}'.format(e))
+    else:
+        raise click.ClickException(
+            'No credentials found, please authenticate first')
 
 
 # PLAYLISTS
@@ -121,16 +68,76 @@ def get_playlist_urls(account, server_name, playlist_title):
     return item_urls
 
 
+def get_download_url(web_url):
+    if not web_url:
+        raise BadRequest('Invalid URL')
+
+    # Regex
+    pattern_server_id = r"(?<=server\/).*?(?=\/details)"
+    pattern_metadata_key = r"(?<=metadata%2F).*?(?=&context)"
+
+    server_id = re.search(pattern_server_id, web_url)
+    metadata_key = re.search(pattern_metadata_key,
+                             web_url)
+
+    if not server_id or not metadata_key:
+        raise BadRequest('Invalid URL')
+
+    server_id = server_id.group(0)
+    metadata_key = metadata_key.group(0).replace("\\", "")
+
+    # if metadata_key or server_id is empty, raise exception
+    if not server_id or not metadata_key:
+        raise BadRequest('Invalid URL')
+
+    # Get account
+    account = get_account()
+
+    # Get servers
+    servers = list_servers(account)
+
+    # find the server using a generator expression and the `next` function
+    server = next(
+        (server for server in servers if server['id'] == server_id), None)
+    if not server:
+        raise BadRequest('Server not found')
+
+    # get media and construct the download URL
+    plex = account.resource(server['name']).connect()
+    media = plex.fetchItem(int(metadata_key))
+    base_url = media._server._baseurl
+    media_url = media.media[0].parts[0].key
+    token = media._server._token
+    url = f"{base_url}{media_url}?X-Plex-Token={token}&download=1"
+
+    return url
+
+
+@click.group()
+def plex():
+    pass
+
+
 @click.command(name='auth')
 @click.option('--username', prompt=True, help='Plex username')
 @click.password_option(help='Plex password')
 def authenticate_cli(username, password):
-    valid, account = authenticate(username, password)
-    if valid:
-        save_credentials(username, password, account)
-        click.echo('Successfully authenticated.')
-    else:
-        click.echo(f'Authentication failed: {account}')
+    try:
+        # Ask user if 2FA is enabled, if so ask for pin
+        two_factor = click.confirm('Is 2FA enabled?')
+        if two_factor:
+            pin = click.prompt('Enter 2FA code')
+        else:
+            pin = None
+        # Authenticate user
+        account = MyPlexAccount(username, password, code=pin)
+        # Get token
+        token = account.authenticationToken
+        # Save token
+        save_credentials(token)
+        click.echo('Authentication successful')
+    except Exception as e:
+        click.echo('Error: {}'.format(e))
 
 
 @click.command(name='download')
@@ -140,20 +147,28 @@ def download_media_cli(query):
     click.echo(url)
 
 
+@click.command(name='signout')
+def signout_cli():
+    keyring.delete_password('plexURLGen', 'token')
+    click.echo('Signed out successfully')
+
+
 @click.command(name='playlist')
 def playlist_cli():
-    username, password, servers = get_credentials()
-    account = get_account(username, password)
+    account = get_account()
 
-    click.echo("Available servers:")
+    # List servers
+    servers = list_servers(account)
+
+    click.echo("Choose a server:")
     for index, server in enumerate(servers, start=1):
         click.echo(f"{index}. {server['name']}")
 
     server_index = click.prompt(
-        "Enter the index of the server you want to search on", type=int) - 1
+        "Enter server number", type=int) - 1
     server_name = servers[server_index]['name']
 
-    click.echo("Available playlists:")
+    click.echo("Choose a playlist:")
     playlists = list_playlists(account, server_name)
 
     # If no playlists, exit
@@ -165,7 +180,7 @@ def playlist_cli():
         click.echo(f"{index}. {playlist.title}")
 
     playlist_index = click.prompt(
-        "Enter the index of the playlist you want to select", type=int) - 1
+        "Enter playlist number", type=int) - 1
     playlist_title = playlists[playlist_index].title
 
     item_urls = get_playlist_urls(account, server_name, playlist_title)
@@ -176,7 +191,7 @@ def playlist_cli():
 
     # Ask user to select the items to download
     selected_items = click.prompt(
-        "Enter the index of the items you want to download, separated by commas", type=str)
+        "Enter the numbers of the items you want to download, separated by commas", type=str)
     selected_items = [int(item) - 1 for item in selected_items.split(",")]
 
     # Display The url of the selected items
@@ -186,6 +201,7 @@ def playlist_cli():
 
 plex.add_command(authenticate_cli)
 plex.add_command(download_media_cli)
+plex.add_command(signout_cli)
 plex.add_command(playlist_cli)
 
 

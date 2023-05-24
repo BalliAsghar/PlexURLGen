@@ -1,2 +1,3 @@
 click
 plexapi
+keyrings.cryptfile

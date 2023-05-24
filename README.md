@@ -45,3 +45,8 @@ plex [Command]
 - `auth`: Authenticate your Plex account. You will be prompted to enter your username and password.
 - `download`: Download media from a Plex server. Provide a valid Plex URL as an argument.
 - `playlist`: Browse and download media from playlists on your Plex server.
+- `signout`: Sign out of your Plex account.
+
+## Notes
+
+- PlexURLGen uses the [keyring](https://pypi.org/project/keyring) package to store your Plex credentials. If you are uncomfortable with this, do not use this tool.
