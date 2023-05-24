@@ -25,7 +25,8 @@ def get_credentials():
 
 
 def list_servers(account):
-    return [{'name': server.name, 'id': server.clientIdentifier} for server in account.resources()]
+    return [{'name': server.name, 'id': server.clientIdentifier}
+            for server in account.resources()]
 
 # Get Plex Account
 
@@ -63,7 +64,8 @@ def get_playlist_urls(account, server_name, playlist_title):
     for item in playlist.items():
         base_url = item._server._baseurl
         media_url = item.media[0].parts[0].key
-        url = f"{base_url}{media_url}?X-Plex-Token={item._server._token}&download=1"
+        url = (f"{base_url}{media_url}"
+               "?X-Plex-Token={item._server._token}&download=1")
         item_urls.append(url)
 
     return item_urls
@@ -192,7 +194,8 @@ def playlist_cli():
 
     # Ask user to select the items to download
     selected_items = click.prompt(
-        "Enter the numbers of the items you want to download, separated by commas", type=str)
+        "Enter the numbers of the items you want to download, "
+        "separated by commas", type=str)
     selected_items = [int(item) - 1 for item in selected_items.split(",")]
 
     # Display The url of the selected items
