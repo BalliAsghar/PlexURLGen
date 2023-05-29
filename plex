@@ -74,25 +74,25 @@ def get_playlist_urls(account, server_name, playlist_title):
 
 def get_download_url(web_url):
     if not web_url:
-        raise BadRequest('Invalid URL')
+        raise click.ClickException('No URL provided')
 
     # Regex
     pattern_server_id = r"(?<=server\/).*?(?=\/details)"
-    pattern_metadata_key = r"(?<=metadata%2F).*?(?=&context)"
+    pattern_metadata_key = r"(?<=metadata%2F).*?(?=[&#%2F])"
 
     server_id = re.search(pattern_server_id, web_url)
     metadata_key = re.search(pattern_metadata_key,
                              web_url)
 
     if not server_id or not metadata_key:
-        raise BadRequest('Invalid URL')
+        raise click.ClickException("Invalid URL")
 
     server_id = server_id.group(0)
     metadata_key = metadata_key.group(0).replace("\\", "")
 
     # if metadata_key or server_id is empty, raise exception
     if not server_id or not metadata_key:
-        raise BadRequest('Invalid URL')
+        raise click.ClickException("Invalid URL")
 
     # Get account
     account = get_account()
