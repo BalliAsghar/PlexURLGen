@@ -161,7 +161,8 @@ def signout_cli():
 
 
 @click.command(name='playlist')
-def playlist_cli():
+@click.option('--m3u', is_flag=True, help='Save as m3u playlist')
+def playlist_cli(m3u):
     account = get_account()
 
     # List servers
@@ -200,6 +201,15 @@ def playlist_cli():
         return
 
     item_urls = get_playlist_urls(account, server_name, playlist_title)
+
+    # if m3u flag is set, save file as m3u playlist
+    if m3u:
+        playlist_file = f"{playlist_title}.m3u"
+        with open(playlist_file, 'w') as f:
+            for url in item_urls:
+                f.write(f"{url}\n")
+        click.echo(f"Playlist saved as {playlist_file}")
+        return
 
     # display media items in the playlist, Title, Size, Duration
     for index, item in enumerate(playlists[playlist_index].items(), start=1):
