@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import math
 import re
 import click
 from plexapi.exceptions import BadRequest
@@ -48,7 +49,15 @@ def get_account():
             'No credentials found, please authenticate first')
 
 
+def write_m3u8_file(playlist_title, items):
+    with open(f"{playlist_title}.m3u8", "w") as f:
+        f.write("#EXTM3U\n")
+        for item in items:
+            f.write(f"#EXTINF:{(item[2] / 1000)}, {item[1]}\n{item[0]}\n")
+
 # PLAYLISTS
+
+
 def list_playlists(account, server_name):
     try:
         plex = account.resource(server_name).connect()
@@ -57,19 +66,21 @@ def list_playlists(account, server_name):
         raise click.ClickException(str(e))
 
 
-def get_playlist_urls(account, server_name, playlist_title):
+def get_playlist_info(account, server_name, playlist_title):
     plex = account.resource(server_name).connect()
     playlist = plex.playlist(playlist_title)
 
-    item_urls = []
+    item_info = []
     for item in playlist.items():
         base_url = item._server._baseurl
         media_url = item.media[0].parts[0].key
         token = item._server._token
-        url = (f"{base_url}{media_url}?X-Plex-Token={token}&download=1")
-        item_urls.append(url)
+        url = f"{base_url}{media_url}?X-Plex-Token={token}&download=1"
+        title = item.title
+        duration = item.duration
+        item_info.append((url, title, duration))
 
-    return item_urls
+    return item_info
 
 
 def get_download_url(web_url):
@@ -200,33 +211,28 @@ def playlist_cli(m3u):
         click.echo("Invalid playlist number")
         return
 
-    item_urls = get_playlist_urls(account, server_name, playlist_title)
+    media_info = get_playlist_info(account, server_name, playlist_title)
 
-    # if m3u flag is set, save file as m3u playlist
     if m3u:
-        playlist_file = f"{playlist_title}.m3u"
-        with open(playlist_file, 'w') as f:
-            for url in item_urls:
-                f.write(f"{url}\n")
-        click.echo(f"Playlist saved as {playlist_file}")
+        write_m3u8_file(playlist_title, media_info)
+        click.echo(f"Playlist saved as {playlist_title}.m3u8")
         return
 
-    # display media items in the playlist, Title, Size, Duration
-    for index, item in enumerate(playlists[playlist_index].items(), start=1):
-        click.echo(f"{index}. {item.title}")
+    # display media Titles
+    for index, item in enumerate(media_info, start=1):
+        click.echo(f"{index}. {item[1]}")
 
-    # Ask user to select the items to download
-    selected_items = click.prompt(
-        "Enter the numbers of the items you want to download, "
-        "separated by commas", type=str)
-    selected_items = [int(item) - 1 for item in selected_items.split(",")]
+    # prompt user for media selection,
+    media_index = click.prompt(
+        "Enter media number(s) to download (separated by comma)", type=str)
 
-    # Display The url of the selected items
-    for index in selected_items:
+    selected_media = [int(index) - 1 for index in media_index.split(',')]
+
+    for index in selected_media:
         try:
-            click.echo(item_urls[index])
+            click.echo(f"{media_info[index][0]}")
         except IndexError:
-            click.echo(f"Invalid item number: {index + 1}")
+            click.echo(f"Invalid media number {index}")
 
 
 plex.add_command(authenticate_cli)
