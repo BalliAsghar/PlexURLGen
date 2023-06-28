@@ -75,9 +75,9 @@ def get_playlist_info(account, server_name, playlist_title):
         media_url = item.media[0].parts[0].key
         token = item._server._token
         url = f"{base_url}{media_url}?X-Plex-Token={token}&download=1"
-        title = item.title
         duration = item.duration
-        item_info.append((url, title, duration))
+        file_name = item.media[0].parts[0].file.split("/")[-1]
+        item_info.append((url, file_name, duration))
 
     return item_info
 
