@@ -218,12 +218,19 @@ def playlist_cli(m3u):
         return
 
     # display media Titles
+    click.echo("0. Display all links")
     for index, item in enumerate(media_info, start=1):
         click.echo(f"{index}. {item[1]}")
 
     # prompt user for media selection,
     media_index = click.prompt(
         "Enter media number(s) to download (separated by comma)", type=str)
+
+    # if the user enters 0, display all links
+    if (media_index == "0"):
+        for item in media_info:
+            click.echo(f"{item[0]}")
+        return
 
     selected_media = [int(index) - 1 for index in media_index.split(',')]
 
