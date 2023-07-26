@@ -45,6 +45,7 @@ plex [Command]
 - `auth`: Authenticate your Plex account. You will be prompted to enter your username and password.
 - `download`: Download media from a Plex server. Provide a valid Plex URL as an argument.
 - `playlist`: Browse and download media from playlists on your Plex server.
+  - `--m3u`: save playlist as m3u file
 - `signout`: Sign out of your Plex account.
 
 ## Notes
