@@ -6,6 +6,20 @@ from plexapi.myplex import MyPlexAccount
 import keyring
 from keyring.errors import PasswordDeleteError
 from urllib.parse import unquote
+import pyperclip
+
+# UTILS
+
+# Copy Link to Clipboard
+
+
+def copy_to_clipboard(url):
+    try:
+        pyperclip.copy(url)
+    except ImportError:
+        click.echo('pyperclip not installed, link not copied to clipboard')
+
+
 # Save User Credentials
 
 
@@ -165,6 +179,7 @@ def authenticate_cli(username, password):
 @click.argument('query')
 def download_media_cli(query):
     url = get_download_url(query)
+    copy_to_clipboard(url)
     click.echo(url)
 
 
@@ -243,6 +258,7 @@ def playlist_cli(m3u):
 
     for index in selected_media:
         try:
+            copy_to_clipboard(media_info[index][0])
             click.echo(f"{media_info[index][0]}")
         except IndexError:
             click.echo(f"Invalid media number {index}")
