@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import re
 import click
-from plexapi.exceptions import BadRequest
+from plexapi.exceptions import BadRequest, NotFound
 from plexapi.myplex import MyPlexAccount
 import keyring
 from keyring.errors import PasswordDeleteError
@@ -121,7 +121,11 @@ def get_download_url(web_url):
 
     # get media and construct the download URL
     plex = account.resource(server['name']).connect()
-    media = plex.fetchItem(int(metadata_key))
+    try:
+        media = plex.fetchItem(int(metadata_key))
+    except NotFound:
+        raise click.ClickException('Media not found')
+
     base_url = media._server._baseurl
     media_url = media.media[0].parts[0].key
     token = media._server._token
