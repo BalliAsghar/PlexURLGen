@@ -5,7 +5,7 @@ from plexapi.exceptions import BadRequest
 from plexapi.myplex import MyPlexAccount
 import keyring
 from keyring.errors import PasswordDeleteError
-
+from urllib.parse import unquote
 # Save User Credentials
 
 
@@ -86,9 +86,12 @@ def get_download_url(web_url):
     if not web_url:
         raise click.ClickException('No URL provided')
 
+    # unquote url
+    web_url = unquote(web_url)
+
     # Regex
-    pattern_server_id = r"(?<=server\/).*?(?=\/details)"
-    pattern_metadata_key = r"(?<=metadata%2F).*?(?=[&#%2F])"
+    pattern_server_id = r"(?<=server\/)[^\/]+"
+    pattern_metadata_key = r"(?<=metadata\/)\d+"
 
     server_id = re.search(pattern_server_id, web_url)
     metadata_key = re.search(pattern_metadata_key,
