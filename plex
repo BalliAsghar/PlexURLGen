@@ -10,6 +10,21 @@ import pyperclip
 
 # UTILS
 
+# Ask User for Credentials
+
+
+def ask_for_credentials():
+    username = click.prompt('Enter Plex username')
+    password = click.prompt('Enter Plex password',
+                            hide_input=True)
+    # Ask user if 2FA is enabled, if so ask for pin
+    two_factor = click.confirm('Is 2FA enabled?')
+    if two_factor:
+        pin = click.prompt('Enter 2FA code')
+    else:
+        pin = None
+    return username, password, pin
+
 # Copy Link to Clipboard
 
 
@@ -154,16 +169,14 @@ def plex():
 
 
 @click.command(name='auth')
-@click.option('--username', prompt=True, help='Plex username')
-@click.password_option(help='Plex password')
-def authenticate_cli(username, password):
+def authenticate_cli():
     try:
-        # Ask user if 2FA is enabled, if so ask for pin
-        two_factor = click.confirm('Is 2FA enabled?')
-        if two_factor:
-            pin = click.prompt('Enter 2FA code')
-        else:
-            pin = None
+        if get_credentials() != "no_token":
+            click.echo('Already authenticated')
+            return
+        # Ask user for credentials
+        username, password, pin = ask_for_credentials()
+
         # Authenticate user
         account = MyPlexAccount(username, password, code=pin)
         # Get token
