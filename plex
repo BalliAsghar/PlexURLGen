@@ -169,13 +169,17 @@ def plex():
 
 
 @click.command(name='auth')
-def authenticate_cli():
+@click.option('--username', prompt=False, help='Plex username')
+@click.option('--password', prompt=False, hide_input=True, help='Plex password')
+@click.option('--pin', prompt=False, help='2FA code')
+def authenticate_cli(username, password, pin):
     try:
         if get_credentials() != "no_token":
             click.echo('Already authenticated')
             return
-        # Ask user for credentials
-        username, password, pin = ask_for_credentials()
+        # Prompt for credentials if not provided
+        if not all([username, password]):
+            username, password, pin = ask_for_credentials()
 
         # Authenticate user
         account = MyPlexAccount(username, password, code=pin)
