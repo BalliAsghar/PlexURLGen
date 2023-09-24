@@ -31,8 +31,12 @@ def ask_for_credentials():
 def copy_to_clipboard(url):
     try:
         pyperclip.copy(url)
-    except ImportError:
-        click.echo('pyperclip not installed, link not copied to clipboard')
+    except AttributeError:
+        raise click.ClickException(
+            'Clipboard not available, please copy the link manually')
+    except Exception:
+        raise click.ClickException(
+            'Could not copy link to clipboard, please copy the link manually')
 
 
 # Save User Credentials
@@ -195,9 +199,12 @@ def authenticate_cli(username, password, pin):
 @click.command(name='download')
 @click.argument('query')
 def download_media_cli(query):
-    url = get_download_url(query)
-    copy_to_clipboard(url)
-    click.echo(url)
+    try:
+        url = get_download_url(query)
+        click.echo(url)
+        copy_to_clipboard(url)
+    except Exception as e:
+        click.echo('Error: {}'.format(e))
 
 
 @click.command(name='signout')
