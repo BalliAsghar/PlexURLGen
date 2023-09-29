@@ -1,6 +1,6 @@
 # PlexURLGen - CLI for Plex Server
 
-PlexURLGen is a command-line interface (CLI) script that allows you to interact with your Plex server. With PlexURLGen, you can authenticate, download media, and manage playlists directly from the command line.
+A CLI tool for Plex server interaction, including authentication, media downloads, and playlist management via the command line.
 
 ## Prerequisites
 
